@@ -1,0 +1,48 @@
+﻿@page "/create-user"
+
+@using System.Text;
+@using System.Text.Json;
+@using BlazorDNAApp.Models;
+
+<PageTitle>Counter</PageTitle>
+@inject HttpClient Http
+
+
+<div>
+    <label for="username">Username</label>
+    <input type="text" id="username" @bind="username" />
+</div>
+<div>
+    <label for="email">Email</label>
+    <input type="email" id="email" @bind="email" />
+</div>
+<div>
+    <label for="password">Password</label>
+    <input type="password" id="password" @bind="password" />
+</div>
+
+<button type="button" class="btn btn-primary" @onclick="CreateUser">Create User</button>
+
+<p>
+    @responseDTO?.Code - @responseDTO?.Message
+</p>
+
+
+@code {
+    private string username;
+    private string email;
+    private string password;
+    ResponseDTO responseDTO;
+
+    private async Task CreateUser()
+    {
+        var user = new { username, email, password };
+        var json = JsonSerializer.Serialize(user);
+        var data = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Http.PostAsync("https://gene.lacuna.cc/api/users/create", data);
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+        responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseDTO>(responseContent);
+        this.StateHasChanged();
+    }
+}
