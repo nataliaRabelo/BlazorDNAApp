@@ -1,0 +1,42 @@
+﻿@page "/Login"
+
+@using System.Text;
+@using System.Text.Json;
+@using BlazorDNAApp.Models;
+
+<PageTitle>Login</PageTitle>
+@inject HttpClient Http
+
+
+<div>
+    <label for="username">Username</label>
+    <input type="text" id="username" @bind="username" />
+</div>
+<div>
+    <label for="password">Password</label>
+    <input type="password" id="password" @bind="password" />
+</div>
+
+<button type="button" class="btn btn-primary" @onclick="Login">Login</button>
+
+<p>
+    @responseDTO?.Code - @responseDTO?.Message
+</p>
+
+
+@code {
+    private string username;
+    private string password;
+    LoginResponseDTO responseDTO;
+
+    private async Task Login()
+    {
+        var loginDTO = new { username, password };
+        var json = JsonSerializer.Serialize(loginDTO);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Http.PostAsync("https://gene.lacuna.cc/api/users/login", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<LoginResponseDTO>(responseContent);
+        this.StateHasChanged();
+    }
+}
