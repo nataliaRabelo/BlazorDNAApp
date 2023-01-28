@@ -20,7 +20,7 @@
 <button type="button" class="btn btn-primary" @onclick="Login">Login</button>
 
 <p>
-    @responseDTO?.Code - @responseDTO?.Message
+    @responseDTO?.Code - @responseDTO?.Message 
 </p>
 
 
@@ -38,5 +38,6 @@
         var responseContent = await response.Content.ReadAsStringAsync();
         responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<LoginResponseDTO>(responseContent);
         this.StateHasChanged();
+        LoginResponseDTO.token = responseDTO?.accessToken;
     }
 }

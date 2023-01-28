@@ -1,6 +1,5 @@
 using BlazorDNAApp.Data;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using BlazorDNAApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
