@@ -8,22 +8,109 @@
 <PageTitle>DNA Jobs</PageTitle>
 @inject HttpClient Http
 
-<button type="button" class="btn btn-primary" @onclick="GetJobs">Get Jobs</button>
+<button type="button" class="btn btn-primary" @onclick="GetJobs">Get Job</button>
 
 <p>
     @jobs
 </p>
+@if (signal == 3)
+{
+    <p>DNA is active?</p>
+    <p>@isActivated</p>
+}
+@if (signal == 1)
+{
+    <p>Encoded DNA:</p>
+    <p>@strandEncoded</p>
+}
+@if (signal == 2)
+{
+    <p>Decoded DNA:</p>
+    <p>@strand</p>
+}
+<button type="button" class="btn btn-primary" @onclick="PostJob">Submit Job</button>
+
+<p>
+    @responseDTO?.Code
+    @responseDTO?.Message
+</p>
 
 @code {
     private string jobs;
+    string strandEncoded;
+    string strand;
+    bool isActivated;
+    string message;
+    ResponseDTO responseDTO;
+    EncodeStrandResponseDTO encodeResponseDTO;
+    DecodeStrandResponseDTO decodeResponseDTO;
+    CheckGeneResponseDTO genResponseDTO;
+    int signal = 0;
 
     private async Task GetJobs()
     {
-        
+
         Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", LoginResponseDTO.token);
         var response = await Http.GetAsync("https://gene.lacuna.cc/api/dna/jobs");
         var responseContent = await response.Content.ReadAsStringAsync();
         jobs = responseContent;
+        if (responseContent.Contains("EncodeStrand"))
+        {
+            encodeResponseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<EncodeStrandResponseDTO>(responseContent);
+            strandEncoded = EncodeStrandResponseDTO.EncodeToBinary(encodeResponseDTO.Job.Strand);
+            signal = 1;
+        }
+        else if (responseContent.Contains("DecodeStrand"))
+        {
+            decodeResponseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<DecodeStrandResponseDTO>(responseContent);
+            byte[] binary = Convert.FromBase64String(decodeResponseDTO.Job.StrandEncoded);
+            strand = DecodeStrandResponseDTO.DecodeBinaryToString(binary);
+            signal = 2;
+        }
+        else if (responseContent.Contains("CheckGene"))
+        {
+            genResponseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<CheckGeneResponseDTO>(responseContent);
+            byte[] geneBin = Convert.FromBase64String(genResponseDTO.Job.GeneEncoded);
+            byte[] strandBin = Convert.FromBase64String(genResponseDTO.Job.StrandEncoded);
+            string geneDecoded = DecodeStrandResponseDTO.DecodeBinaryToString(geneBin);
+            string strandDecoded = DecodeStrandResponseDTO.DecodeBinaryToString(strandBin);
+            isActivated = CheckGeneResponseDTO.CheckGene(geneDecoded, strandDecoded);
+            signal = 3; 
+        }
+        else
+        {
+            message = "Invalid json for this operation.";
+        }
         this.StateHasChanged();
+    }
+
+    private async Task PostJob()
+    {
+        if(signal == 1){
+            var strEncode = new { strandEncoded };
+            string json = JsonSerializer.Serialize(strEncode);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await Http.PostAsync("https://gene.lacuna.cc/api/dna/jobs/" + encodeResponseDTO.Job.Id + "/encode", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseDTO>(responseContent);
+        }else if(signal == 2)
+        {
+            var strDecode = new { strand };
+            string json = JsonSerializer.Serialize(strDecode);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await Http.PostAsync("https://gene.lacuna.cc/api/dna/jobs/" + decodeResponseDTO.Job.Id + "/decode", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseDTO>(responseContent);
+        }else if(signal == 3)
+        {
+            var checkGene = new { isActivated };
+            string json = JsonSerializer.Serialize(checkGene);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await Http.PostAsync("https://gene.lacuna.cc/api/dna/jobs/" + genResponseDTO.Job.Id + "/gene", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            responseDTO = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseDTO>(responseContent);
+        }
+        this.StateHasChanged();
+
     }
 }
