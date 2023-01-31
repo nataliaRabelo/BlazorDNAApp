@@ -9,46 +9,26 @@ namespace BlazorDNAApp.Models
 
         public string Code { get; set; }
 
+
+        // Problema resolvido com LCS longest common substring.  
         public static bool CheckGene(string gene, string dna)
         {
-            int number = 0;
-            for (int i = 0; i < gene.Length; i++)
+            int[,] dp = new int[gene.Length + 1, dna.Length + 1];
+            int result = 0;
+
+            for (int i = 1; i <= gene.Length; i++)
             {
-                
-                bool isActive = CheckString(gene, dna, number);
-                if (!(isActive))
+                for (int j = 1; j <= dna.Length; j++)
                 {
-                    number++;
-                }
-                else
-                {
-                    return true;
+                    if (gene[i - 1] == dna[j - 1])
+                    {
+                        dp[i, j] = dp[i - 1, j - 1] + 1;
+                        result = Math.Max(result, dp[i, j]);
+                    }
                 }
             }
-
-            return false;
+            return result > gene.Length/2.0;
         }
 
-        private static bool CheckString(string gene, string dna, int number)
-        {
-            int halfOfGene = gene.Length / 2;
-            string partOfGene = "";
-            for (int j = 0; j < gene.Length; j++)
-            {
-                for (int i = j; i < halfOfGene + number; i++)
-                {
-                    partOfGene += i;
-                }
-                if (dna.Contains(partOfGene))
-                {
-                    return true;
-                }
-                else
-                {
-                    partOfGene = "";
-                }
-            }
-            return false;
-        }
     }
 }
